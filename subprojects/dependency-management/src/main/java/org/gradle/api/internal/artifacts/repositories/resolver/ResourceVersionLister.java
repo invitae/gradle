@@ -102,12 +102,13 @@ public class ResourceVersionLister implements VersionLister {
         }
         if (versionListPatterns.size() > 1) {
             // Verify that none of the listed "versions" do match another pattern
-            filterOutMatchesWithOverlappingPatterns(listedVersions, versionListPattern, versionListPatterns.values());
+            return filterOutMatchesWithOverlappingPatterns(listedVersions, versionListPattern, versionListPatterns.values());
         }
         return listedVersions;
     }
 
-    private void filterOutMatchesWithOverlappingPatterns(List<String> listedVersions, ExternalResourceName currentVersionListPattern, Collection<ExternalResourceName> versionListPatterns) {
+    private List<String> filterOutMatchesWithOverlappingPatterns(List<String> listedVersions, ExternalResourceName currentVersionListPattern, Collection<ExternalResourceName> versionListPatterns) {
+        List<String> remaining = Lists.newArrayList(listedVersions);
         for (ExternalResourceName otherVersionListPattern : versionListPatterns) {
             if (otherVersionListPattern != currentVersionListPattern) {
                 String patternPath = otherVersionListPattern.getPath();
@@ -117,10 +118,11 @@ public class ResourceVersionLister implements VersionLister {
                     .collect(Collectors.toList());
                 if (!matching.isEmpty()) {
                     LOGGER.debug("Filtered out {} from results for overlapping match with {}", matching, otherVersionListPattern);
-                    listedVersions.removeAll(matching);
+                    remaining.removeAll(matching);
                 }
             }
         }
+        return remaining;
     }
 
     private List<String> filterMatchedValues(List<String> all, final Pattern p) {
@@ -184,17 +186,6 @@ public class ResourceVersionLister implements VersionLister {
 
     @Nullable
     private List<String> listWithCache(ExternalResourceName parent) {
-        List<String> result;
-        if (directoriesToList.containsKey(parent)) {
-            result = directoriesToList.get(parent);
-        } else {
-            result = repository.resource(parent).list();
-            directoriesToList.put(parent, result);
-        }
-        if (result != null) {
-            return Lists.newArrayList(result);
-        } else {
-            return null;
-        }
+        return directoriesToList.computeIfAbsent(parent, key -> repository.resource(key).list());
     }
 }
