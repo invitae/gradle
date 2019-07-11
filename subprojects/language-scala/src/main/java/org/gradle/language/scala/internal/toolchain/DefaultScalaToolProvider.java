@@ -16,10 +16,12 @@
 
 package org.gradle.language.scala.internal.toolchain;
 
+import org.gradle.api.internal.ClassPathRegistry;
 import org.gradle.api.internal.tasks.scala.DaemonScalaCompiler;
 import org.gradle.api.internal.tasks.scala.NormalizingScalaCompiler;
 import org.gradle.api.internal.tasks.scala.ScalaJavaJointCompileSpec;
 import org.gradle.api.internal.tasks.scala.ZincScalaCompilerFacade;
+import org.gradle.initialization.ClassLoaderRegistry;
 import org.gradle.internal.logging.text.DiagnosticsVisitor;
 import org.gradle.language.base.internal.compile.CompileSpec;
 import org.gradle.language.base.internal.compile.Compiler;
@@ -38,13 +40,17 @@ public class DefaultScalaToolProvider implements ToolProvider {
     private final Set<File> resolvedScalaClasspath;
     private final Set<File> resolvedZincClasspath;
     private final JavaForkOptionsFactory forkOptionsFactory;
+    private final ClassPathRegistry classPathRegistry;
+    private final ClassLoaderRegistry classLoaderRegistry;
 
-    public DefaultScalaToolProvider(File daemonWorkingDir, WorkerDaemonFactory workerDaemonFactory, JavaForkOptionsFactory forkOptionsFactory, Set<File> resolvedScalaClasspath, Set<File> resolvedZincClasspath) {
+    public DefaultScalaToolProvider(File daemonWorkingDir, WorkerDaemonFactory workerDaemonFactory, JavaForkOptionsFactory forkOptionsFactory, ClassPathRegistry classPathRegistry, Set<File> resolvedScalaClasspath, Set<File> resolvedZincClasspath, ClassLoaderRegistry classLoaderRegistry) {
         this.daemonWorkingDir = daemonWorkingDir;
         this.workerDaemonFactory = workerDaemonFactory;
         this.forkOptionsFactory = forkOptionsFactory;
         this.resolvedScalaClasspath = resolvedScalaClasspath;
         this.resolvedZincClasspath = resolvedZincClasspath;
+        this.classPathRegistry = classPathRegistry;
+        this.classLoaderRegistry = classLoaderRegistry;
     }
 
     @Override
@@ -58,8 +64,9 @@ public class DefaultScalaToolProvider implements ToolProvider {
                     new Object[] {resolvedScalaClasspath, resolvedZincClasspath},
                     workerDaemonFactory,
                     resolvedZincClasspath,
-                    forkOptionsFactory
-                )
+                    forkOptionsFactory,
+                classPathRegistry,
+                            classLoaderRegistry)
             );
         }
         throw new IllegalArgumentException(String.format("Cannot create Compiler for unsupported CompileSpec type '%s'", spec.getSimpleName()));
